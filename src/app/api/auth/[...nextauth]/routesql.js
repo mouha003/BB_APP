@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import ExecuteQuery from "../../../db/newPosgres"; // Adjust the import based on your structure
+import ExecuteQuery from "@/app/db/dbconfig"; // Adjust the import based on your structure
 
 const authOptions = {
   providers: [
@@ -15,23 +15,25 @@ const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const query = `
-          SELECT * FROM "bb_users" WHERE USER_NAME = $1 AND "PASSWORD" = $2
-        `;
-        const params = [credentials.username, credentials.password]; // Array of parameters
+        const query =
+          "SELECT * FROM BB_USERS WHERE USER_NAME = @username AND PASSWORD = @password";
+        const params = {
+          username: credentials.username,
+          password: credentials.password, // Remember to hash passwords in production!
+        };
 
         try {
           const results = await ExecuteQuery(query, params);
-          const user = results[0]; // PostgreSQL returns rows as an array
+          const user = results[0];
 
           if (user) {
             return {
-              id: user.user_id,
-              name: user.display_name,
-              email: user.email,
+              id: user.USER_ID,
+              name: user.DISPLAY_NAME,
+              email: user.EMAIL,
             };
           }
-          return null; // Return null if no matching user is found
+          return null; // Return null if user is not found
         } catch (error) {
           console.error("Authorization error:", error);
           throw new Error("Error validating user");
